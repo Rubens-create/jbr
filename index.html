@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizador de Estoque</title>
+    <style>
+        /* Estilos gerais para a página */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh; /* Ocupa a altura total da tela */
+            margin: 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        /* Estilos para o contêiner principal */
+        .container {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #1c1e21;
+        }
+
+        /* Estilos para o botão de ação */
+        #updateButton {
+            padding: 18px 35px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            background-color: #007bff; /* Azul vibrante */
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+
+        #updateButton:hover {
+            background-color: #0056b3; /* Azul mais escuro no hover */
+        }
+        
+        #updateButton:active {
+            transform: scale(0.98); /* Efeito de clique */
+        }
+
+        /* Estilos para o botão quando desabilitado */
+        #updateButton:disabled {
+            background-color: #6c757d; /* Cinza */
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Estilos para a mensagem de status */
+        #statusMessage {
+            margin-top: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            min-height: 24px; /* Evita que o layout "pule" ao exibir a mensagem */
+            transition: color 0.3s ease;
+        }
+
+        .status-success {
+            color: #28a745; /* Verde para sucesso */
+        }
+
+        .status-error {
+            color: #dc3545; /* Vermelho para erro */
+        }
+
+        .status-info {
+            color: #6c757d; /* Cinza para informação */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Painel de Controle</h1>
+        <button id="updateButton">Atualizar Estoque</button>
+        <p id="statusMessage"></p>
+    </div>
+
+    <script>
+        // Seleciona os elementos do HTML que vamos manipular
+        const updateButton = document.getElementById('updateButton');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Adiciona um "ouvinte" para o evento de clique no botão
+        updateButton.addEventListener('click', function() {
+            // URL do seu webhook no n8n
+            const webhookUrl = 'https://n8n.jbrcastanhas.com.br/webhook/atualizar';
+
+            // Dados que serão enviados no corpo da requisição (payload)
+            const payload = {
+                mensagem: 'atualizar'
+            };
+
+            // --- Feedback para o usuário: Início da Ação ---
+            updateButton.disabled = true; // Desabilita o botão para evitar múltiplos cliques
+            updateButton.textContent = 'Atualizando...'; // Muda o texto do botão
+            statusMessage.textContent = 'Enviando comando para o servidor...';
+            statusMessage.className = 'status-info'; // Define a cor da mensagem
+
+            // --- A Mágica: Chamada da API com Fetch ---
+            fetch(webhookUrl, {
+                method: 'POST', // Tipo de requisição
+                headers: {
+                    'Content-Type': 'application/json' // Informa que estamos enviando dados em formato JSON
+                },
+                body: JSON.stringify(payload) // Converte o objeto JavaScript em uma string JSON
+            })
+            .then(response => {
+                // O .then() é executado quando o servidor responde
+                if (!response.ok) {
+                    // Se a resposta não for de sucesso (ex: erro 404, 500), lança um erro
+                    throw new Error(`Erro na resposta do servidor: Código ${response.status}`);
+                }
+                // Se chegou aqui, a requisição foi recebida com sucesso (código 200)
+                handleSuccess();
+            })
+            .catch(error => {
+                // O .catch() é executado se houver qualquer erro na requisição (rede, servidor, etc.)
+                handleError(error);
+            })
+            .finally(() => {
+                // O .finally() é executado sempre, após o sucesso ou a falha
+                // Reativa o botão após um pequeno atraso para o usuário ler a mensagem
+                setTimeout(() => {
+                    updateButton.disabled = false;
+                    updateButton.textContent = 'Atualizar Estoque';
+                }, 3000); // 3 segundos de atraso
+            });
+        });
+
+        // Função para lidar com o sucesso
+        function handleSuccess() {
+            statusMessage.textContent = '✅ Sucesso! A atualização do estoque foi iniciada.';
+            statusMessage.className = 'status-success';
+        }
+
+        // Função para lidar com o erro
+        function handleError(error) {
+            console.error('Falha ao chamar o webhook:', error); // Loga o erro no console do navegador para depuração
+            statusMessage.textContent = `❌ Falha! Não foi possível acionar a atualização. (${error.message})`;
+            statusMessage.className = 'status-error';
+        }
+    </script>
+
+</body>
+</html>
